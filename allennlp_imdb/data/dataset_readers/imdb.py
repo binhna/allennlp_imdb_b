@@ -31,15 +31,21 @@ class ImdbDatasetReader(DatasetReader):
                  lazy: bool = False) -> None:
         super().__init__(lazy=lazy)
 
+        # Split into words and apply some stemming or stop word removal, etc ...
         self._tokenizer = tokenizer or WordTokenizer()
-        self._token_indexers = token_indexers or {'tokens': SingleIdTokenIndexer()}
+        # Single index for each tokens (call "tokens")
+        self._token_indexers = token_indexers or {
+            'tokens': SingleIdTokenIndexer()}
 
     @overrides
     def _read(self, file_path):
+        # Just return a path if it's already a path, or download it and return a path if it's a URL
         tar_path = cached_path(self.TAR_URL)
+        # open tar archive file
         tf = tarfile.open(tar_path, 'r')
         cache_dir = Path(osp.dirname(tar_path))
         if not (cache_dir / self.TRAIN_DIR).exists() and not (cache_dir / self.TEST_DIR).exists():
+            # if there is no cache or path does not exist, extract the tar archive
             tf.extractall(cache_dir)
 
         if file_path == 'train':
@@ -49,7 +55,9 @@ class ImdbDatasetReader(DatasetReader):
             pos_dir = osp.join(self.TEST_DIR, 'pos')
             neg_dir = osp.join(self.TEST_DIR, 'neg')
         else:
-            raise ValueError(f"only 'train' and 'test' are valid for 'file_path', but '{file_path}' is given.")
+            raise ValueError(
+                f"only 'train' and 'test' are valid for 'file_path', but '{file_path}' is given.")
+        # return an iterators all the .txt files of pos and neg
         path = chain(Path(cache_dir.joinpath(pos_dir)).glob('*.txt'),
                      Path(cache_dir.joinpath(neg_dir)).glob('*.txt'))
 
